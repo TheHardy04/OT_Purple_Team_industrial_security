@@ -1,0 +1,8 @@
+# 1. OIDA Modbus User-Defined Function Code Fuzzing (FC 65-127 / 0x41-0x7F)
+alert tcp any any -> any 502 (msg:"OT/ICS - OIDA Modbus Non-Standard Function Code Fuzzing (FC 65-127)"; flow:to_server,established; content:"|00 00|"; offset:2; depth:2; byte_test:1,>=,0x41,7; byte_test:1,<=,0x7f,7; classtype:attempted-recon; sid:1000001; rev:1;)
+
+# 2. OIDA Specific Fuzzing Payload Pattern (Unit ID 0x01 + FC 0x41-0x7F + 01 <FC> 00 00 00 01)
+alert tcp any any -> any 502 (msg:"OT/ICS - OIDA Modbus Function Fuzzing Payload Signature"; flow:to_server,established; content:"|00 00 00 08|"; offset:2; depth:4; content:"|01|"; offset:6; depth:1; byte_test:1,>=,0x41,7; byte_test:1,<=,0x7f,7; byte_extract:1,7,oida_fc; content:"|01|"; offset:8; depth:1; byte_test:1,=,oida_fc,9; content:"|00 00 00 01|"; offset:10; depth:4; classtype:attempted-recon; sid:1000002; rev:2;)
+
+# 3. Modbus Exception Flood (Illegal Function 0x01) triggered by FC enumeration/fuzzing
+alert tcp any 502 -> any any (msg:"OT/ICS - Modbus Illegal Function Exception Flood (Recon/Fuzzing)"; flow:to_client,established; content:"|00 00|"; offset:2; depth:2; byte_test:1,&,0x80,7; content:"|01|"; offset:8; depth:1; threshold:type both, track by_src, count 5, seconds 5; classtype:attempted-recon; sid:1000003; rev:1;)
