@@ -1,1 +1,1 @@
-oida-ics
+oida-ics[all]

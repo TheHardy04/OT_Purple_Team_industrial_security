@@ -4,6 +4,69 @@ This project provides a practical environment for exploring industrial and
 operational technology (OT) security with [O.I.D.A.](https://getoida.dev),
 the OT/ICS Dynamic Assessment framework.
 
+## Concepts for beginners
+
+### Operational Technology
+
+**Operational Technology (OT)** includes systems that monitor or control
+physical processes, such as pumps, ventilation, power equipment, and
+manufacturing lines. OT commonly uses:
+
+- **SCADA**: supervisory control and data acquisition for monitoring processes.
+- **HMI**: a human-machine interface, usually an operator screen.
+- **PLC**: a programmable logic controller that executes control logic and
+  communicates with sensors and actuators.
+
+A SCADA system or HMI may act as a master, sending requests to a PLC or field
+device acting as a slave. OT environments prioritize safety and availability,
+so testing must be authorized and carefully controlled.
+
+### Modbus/TCP
+
+**Modbus/TCP** carries Modbus requests and responses between masters and field
+devices over a TCP connection, normally on **TCP/502**. It has no built-in
+authentication or encryption, so network segmentation and access control are
+important.
+
+A Modbus/TCP frame has two parts:
+
+- **MBAP Header**: the 7-byte Modbus Application Protocol header. It contains
+  the Transaction Identifier, Protocol Identifier, Length, and Unit Identifier.
+- **PDU**: the Protocol Data Unit. It contains a Function Code and operation
+  data.
+
+A **Function Code (FC)** specifies the operation, such as `FC 03 / 0x03`
+(Read Holding Registers). Public Function Codes are standardized operations.
+Codes `65–127 / 0x41–0x7F` are reserved or vendor/user-defined and may be
+unsupported. An exception response sets the `0x80` bit in the echoed FC and
+returns an Exception Code; for example, `0xC1` is FC `0x41` with the exception
+bit set, and code `0x01` means Illegal Function.
+
+### Suricata
+
+[Suricata](https://suricata.io/) is a network Intrusion Detection System (IDS).
+It inspects packet payloads and generates alerts when traffic matches signature
+rules. A Suricata rule generally has this structure:
+
+```text
+action protocol src_ip src_port -> dst_ip dst_port (rule options)
+```
+
+For example, `alert tcp any any -> any 502 (...)` means: alert on TCP traffic
+sent from any source to destination port 502.
+
+The rule keywords used in this repository mean:
+
+- `flow`: limits inspection to a traffic direction and connection state.
+- `content`: searches payload bytes.
+- `offset`: sets the byte position at which to begin an inspection.
+- `depth`: limits a search to a fixed payload length.
+- `byte_test`: compares or masks a numeric byte.
+- `threshold`: controls repeated alerts over a count and time window.
+- `classtype`: assigns an alert category.
+- `sid`: provides the signature's unique ID.
+- `rev`: identifies the signature revision.
+
 ## Setup
 
 Create and activate a Python virtual environment, then install the project dependencies:
@@ -100,3 +163,28 @@ Discovery & tooling
 Run oida <protocol> -h for protocol-specific options
 ```
 We can see all the protocols supported by OIDA, we decided to start with modbus.
+
+## Detection engineering
+
+- [Modbus/TCP Purple Team Detection Engineering](modbus/README.md) documents
+  the OIDA function-code fuzzing attack, MBAP/PDU packet structure,
+  Suricata 7.0.3 rules, PCAP replay, and tuning guidance.
+
+## Mock OT
+
+We used the official [shooting range](https://getoida.dev/features/simulation-services/) tutorial on OIDA's documentation to emulate our attack.
+
+```shell
+git clone https://github.com/f0rw4rd/oida
+cd oida
+
+# Start the everyday protocol mocks (builds images on first run)
+python services.py up core
+
+# See what is running and on which ports
+python services.py status
+python services.py ports
+
+# Tear it all down
+python services.py down
+```
