@@ -168,7 +168,8 @@ We can see all the protocols supported by OIDA, we decided to start with modbus.
 
 - [Modbus/TCP Purple Team Detection Engineering](modbus/README.md) documents
   the OIDA function-code fuzzing attack, MBAP/PDU packet structure,
-  Suricata 7.0.3 rules, PCAP replay, and tuning guidance.
+  Suricata rules (validated on 7.0.3 and 8.0.6), step-by-step reproduction,
+  and tuning guidance.
 
 ## Mock OT
 
@@ -180,6 +181,9 @@ cd oida
 
 # Start the everyday protocol mocks (builds images on first run)
 python services.py up core
+
+# Or start only the Modbus mock used in this lab
+python services.py up modbus
 
 # See what is running and on which ports
 python services.py status
